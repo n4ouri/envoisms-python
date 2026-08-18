@@ -15,6 +15,9 @@ class EnvoiSMSClient:
         payload = {"messages": messages, **kwargs}
         return self._request("POST", "/v1/messages/bulk", json=payload)
 
+    def get_message(self, message_id: str) -> Dict[str, Any]:
+        return self._request("GET", f"/v1/messages/{message_id}")
+
     def send_otp(self, to: str, **kwargs: Any) -> Dict[str, Any]:
         payload = {"to": to, **kwargs}
         return self._request("POST", "/v1/verify/send", json=payload)
@@ -22,6 +25,12 @@ class EnvoiSMSClient:
     def check_otp(self, session_id: str, code: str) -> Dict[str, Any]:
         payload = {"session_id": session_id, "code": code}
         return self._request("POST", "/v1/verify/check", json=payload)
+
+    def get_balance(self) -> Dict[str, Any]:
+        return self._request("GET", "/v1/billing/balance")
+
+    def list_packs(self) -> Dict[str, Any]:
+        return self._request("GET", "/v1/billing/packs")
 
     def analytics(self, days: int = 30) -> Dict[str, Any]:
         return self._request("GET", f"/v1/analytics?days={days}")
@@ -41,12 +50,15 @@ class EnvoiSMSClient:
     def create_topup(
         self,
         amount_eur: Optional[float] = None,
+        amount_mad: Optional[float] = None,
         payment_method: str = "stripe",
         pack_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         payload: Dict[str, Any] = {"payment_method": payment_method}
         if amount_eur is not None:
             payload["amount_eur"] = amount_eur
+        if amount_mad is not None:
+            payload["amount_mad"] = amount_mad
         if pack_id is not None:
             payload["pack_id"] = pack_id
         return self._request("POST", "/v1/billing/topups", json=payload)

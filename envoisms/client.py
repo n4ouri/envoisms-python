@@ -13,6 +13,7 @@ class EnvoiSMSError(Exception):
 
 
 class EnvoiSMSClient:
+    """Synchronous EnvoiSMS.ma API client."""
     def __init__(
         self,
         api_key: str,
@@ -31,7 +32,6 @@ class EnvoiSMSClient:
             "User-Agent": "EnvoiSMS-PythonSDK/1.0.0",
         })
 
-    # --- Messages ---
     def send(
         self,
         to: str,
@@ -65,7 +65,6 @@ class EnvoiSMSClient:
     def list_messages(self, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
         return self._request("GET", f"/v1/messages?limit={limit}&offset={offset}")
 
-    # --- Verify / OTP ---
     def send_otp(
         self,
         to: str,
@@ -93,14 +92,12 @@ class EnvoiSMSClient:
     def get_otp_session(self, session_id: str) -> Dict[str, Any]:
         return self._request("GET", f"/v1/verify/{session_id}")
 
-    # --- Billing & Balance ---
     def get_balance(self) -> Dict[str, Any]:
         return self._request("GET", "/v1/billing/balance")
 
     def list_packs(self) -> Dict[str, Any]:
         return self._request("GET", "/v1/billing/packs")
 
-    # --- Webhook Signature Verification ---
     @staticmethod
     def verify_webhook_signature(
         raw_body: str,
@@ -111,7 +108,6 @@ class EnvoiSMSClient:
         if not raw_body or not signature_header or not secret:
             return False
 
-        # Handles timestamped header format: t=1234567890,v1=abcdef...
         if "t=" in signature_header and "v1=" in signature_header:
             parts = dict(item.strip().split("=", 1) for item in signature_header.split(","))
             timestamp_str = parts.get("t")
@@ -133,12 +129,10 @@ class EnvoiSMSClient:
             expected = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
             return hmac.compare_digest(signature, expected)
 
-        # Handles direct sha256=... format
         clean_sig = signature_header.removeprefix("sha256=")
         expected = hmac.new(secret.encode("utf-8"), raw_body.encode("utf-8"), hashlib.sha256).hexdigest()
         return hmac.compare_digest(clean_sig, expected)
 
-    # --- Internal Request with Retry ---
     def _request(self, method: str, path: str, **kwargs) -> Dict[str, Any]:
         last_error = None
         for attempt in range(self.max_retries + 1):

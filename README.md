@@ -1,8 +1,8 @@
 # EnvoiSMS Python SDK
 
-Official Python SDK for [EnvoiSMS.ma](https://envoisms.ma) — SMS, WhatsApp & OTP API platform for Morocco.
+Official Python SDK for [EnvoiSMS.ma](https://envoisms.ma) — [Passerelle SMS & WhatsApp Business](https://envoisms.ma/fr/docs) and [API SMS Maroc](https://envoisms.ma/fr/tarifs).
 
-For full API documentation and specifications, visit [EnvoiSMS Documentation](https://envoisms.ma/fr/docs).
+For full API documentation and specifications, visit the [Passerelle SMS & WhatsApp Business](https://envoisms.ma/fr/docs). For pricing plans and credit packs, visit [API SMS Maroc](https://envoisms.ma/fr/tarifs).
 
 ## Installation
 
@@ -51,9 +51,10 @@ if check_res.get("verified"):
     print("OTP code is valid!")
 ```
 
-## Documentation
+## Documentation & Tarifs
 
-Comprehensive API guide: [https://envoisms.ma/fr/docs](https://envoisms.ma/fr/docs).
+- Documentation technique & intégration : [Passerelle SMS & WhatsApp Business](https://envoisms.ma/fr/docs)
+- Grille tarifaire et packs de crédits : [API SMS Maroc](https://envoisms.ma/fr/tarifs)
 
 ## License
 

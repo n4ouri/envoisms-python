@@ -1,3 +1,3 @@
-from .client import EnvoiSMSClient
+from .client import EnvoiSMSClient, EnvoiSMSError
 
-__all__ = ["EnvoiSMSClient"]
+__all__ = ["EnvoiSMSClient", "EnvoiSMSError"]

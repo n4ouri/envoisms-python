@@ -14,6 +14,7 @@ class EnvoiSMSError(Exception):
 
 class EnvoiSMSClient:
     """Synchronous EnvoiSMS.ma API client."""
+
     def __init__(
         self,
         api_key: str,
@@ -29,7 +30,7 @@ class EnvoiSMSClient:
         self.session.headers.update({
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "User-Agent": "EnvoiSMS-PythonSDK/1.0.0",
+            "User-Agent": "EnvoiSMS-PythonSDK/1.1.0",
         })
 
     def send(
@@ -98,6 +99,34 @@ class EnvoiSMSClient:
     def list_packs(self) -> Dict[str, Any]:
         return self._request("GET", "/v1/billing/packs")
 
+    def list_payment_methods(self) -> Dict[str, Any]:
+        return self._request("GET", "/v1/billing/payment-methods")
+
+    def create_topup(
+        self,
+        amount_eur: Optional[float] = None,
+        amount_mad: Optional[float] = None,
+        payment_method: str = "stripe",
+        pack_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {"payment_method": payment_method}
+        if amount_eur is not None:
+            payload["amount_eur"] = amount_eur
+        if amount_mad is not None:
+            payload["amount_mad"] = amount_mad
+        if pack_id is not None:
+            payload["pack_id"] = pack_id
+        return self._request("POST", "/v1/billing/topups", json=payload)
+
+    def analytics(self, days: int = 30) -> Dict[str, Any]:
+        return self._request("GET", f"/v1/analytics?days={days}")
+
+    def create_api_key(self, **kwargs: Any) -> Dict[str, Any]:
+        return self._request("POST", "/v1/api-keys", json=kwargs)
+
+    def create_optout(self, phone: str) -> Dict[str, Any]:
+        return self._request("POST", "/v1/optouts", json={"phone": phone})
+
     @staticmethod
     def verify_webhook_signature(
         raw_body: str,
@@ -105,6 +134,7 @@ class EnvoiSMSClient:
         secret: str,
         tolerance_seconds: int = 300,
     ) -> bool:
+        """Verify an X-EnvoiSMS-Signature header on an incoming DLR/status webhook."""
         if not raw_body or not signature_header or not secret:
             return False
 
@@ -133,8 +163,8 @@ class EnvoiSMSClient:
         expected = hmac.new(secret.encode("utf-8"), raw_body.encode("utf-8"), hashlib.sha256).hexdigest()
         return hmac.compare_digest(clean_sig, expected)
 
-    def _request(self, method: str, path: str, **kwargs) -> Dict[str, Any]:
-        last_error = None
+    def _request(self, method: str, path: str, **kwargs: Any) -> Dict[str, Any]:
+        last_error: Optional[Exception] = None
         for attempt in range(self.max_retries + 1):
             try:
                 response = self.session.request(

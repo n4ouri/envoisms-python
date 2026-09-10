@@ -163,7 +163,7 @@ except EnvoiSMSError as e:
 ## Why teams pick EnvoiSMS.ma over an aggregator
 
 - **Direct routes to IAM, Inwi and Orange** — no international transit hop, no gray-route ban risk.
-- **Sub-2-second OTP latency**, measured — aggregators routing through Europe typically land in the 10s+ range.
+- **2.4–2.8 second OTP latency**, measured across IAM, Inwi and Orange — aggregators routing through Europe typically land in the 10s+ range.
 - **Billing in MAD**, no EUR/USD conversion surprises.
 - **Local support** based in Casablanca, not an offshore ticket queue.
 

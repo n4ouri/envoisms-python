@@ -38,18 +38,48 @@ response = client.send(
     from_sender="MonBusiness",  # validated Sender ID, or omit to use your default
 )
 
-print(f"Message ID: {response['id']}")
+print(f"Message ID: {response['id']}")  # poll it with get_message(), match it in webhooks
 ```
+
+Every `send()` / `send_bulk()` carries an `Idempotency-Key` (generated, or pass `idempotency_key=`), so a retry after a timeout can never bill the same message twice.
+
+## Choosing a channel: SMS or WhatsApp?
+
+**Default to SMS.** It reaches every Moroccan mobile (IAM, Inwi, Orange) with no setup beyond your API key, and it is what an "ordinary text to a customer" needs — even when that customer uses WhatsApp.
+
+`channel="whatsapp"` is different in kind, not just in name. It sends from **your own WhatsApp Business number**, which means:
+
+- the number must be connected in your dashboard (WhatsApp tab) — otherwise the API answers `403 WHATSAPP_NOT_CONNECTED` and nothing is charged;
+- a free-form text is only accepted while the recipient has written to that number in the last 24 hours (`400 OUT_OF_24H_WINDOW` otherwise, nothing charged);
+- outside that window, you send an **approved template** (`template` field), not free text.
+
+| You want to… | Use |
+| --- | --- |
+| Send a text to a customer (order status, reminder, alert) | `channel="sms"` (the default — just omit it) |
+| Send a one-time code | `send_otp()` — pass `channel="whatsapp"` for a WhatsApp code through our shared sender, no connection needed |
+| Reply on WhatsApp to a customer who wrote to your number in the last 24 h | `channel="whatsapp"` with `message` |
+| Start a WhatsApp conversation (marketing, utility) | `channel="whatsapp"` with an approved `template` |
+
+Common mistake: sending an SMS-style text with `channel="whatsapp"` "because the customer is on WhatsApp". Both refusals above name the fix — send it as SMS.
 
 ## Send a WhatsApp Business Message
 
-Same client, same method — just switch the channel. Requires WhatsApp connected in your [dashboard](https://envoisms.ma/fr/whatsapp/).
+Only from a WhatsApp Business number you connected in your [dashboard](https://envoisms.ma/fr/whatsapp/) — see the table above. Free text works inside the 24-hour customer window; otherwise send an approved template.
 
 ```python
+# Reply to a customer who wrote to your number in the last 24 h
 response = client.send(
     to="+212600000000",
     message="Bonjour ! Votre commande #89240 a été expédiée.",
     channel="whatsapp",
+)
+
+# Start the conversation yourself: approved template, any time
+response = client.send(
+    to="+212600000000",
+    message="Votre commande #89240 a été expédiée.",  # shown in your history; the template body is what goes out
+    channel="whatsapp",
+    template={"name": "order_shipped", "language": "fr", "variables": ["89240"]},
 )
 ```
 

@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import time
+import uuid
 from typing import Any, Dict, List, Optional
 import requests
 
@@ -30,7 +31,7 @@ class EnvoiSMSClient:
         self.session.headers.update({
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "User-Agent": "EnvoiSMS-PythonSDK/1.1.0",
+            "User-Agent": "EnvoiSMS-PythonSDK/1.2.0",
         })
 
     def send(
@@ -41,29 +42,55 @@ class EnvoiSMSClient:
         channel: str = "sms",
         cascade: bool = False,
         metadata: Optional[Dict[str, Any]] = None,
+        template: Optional[Dict[str, Any]] = None,
+        idempotency_key: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Send one message. Returns the API's 202 body: {"id", "to", "channel", "status": "queued", "cost": {"eur", "mad"}, ...}.
+
+        channel defaults to "sms", which is what an ordinary text to a customer
+        needs — even when that customer uses WhatsApp. "whatsapp" sends from YOUR
+        OWN connected WhatsApp Business number: without one the API answers
+        403 WHATSAPP_NOT_CONNECTED, and a free-form text outside the 24-hour
+        customer window answers 400 OUT_OF_24H_WINDOW (pass template=...).
+        Nothing is charged in either case. For a one-time code over WhatsApp
+        with no connection, use send_otp(channel="whatsapp").
+
+        idempotency_key is sent as the Idempotency-Key header (generated when
+        omitted) so a retried request can never queue and bill the message twice.
+        """
         payload: Dict[str, Any] = {"to": to, "message": message, "channel": channel, "cascade": cascade}
         if from_sender:
             payload["from"] = from_sender
         if metadata:
             payload["metadata"] = metadata
-        return self._request("POST", "/v1/messages", json=payload)
+        if template:
+            payload["template"] = template
+        return self._request(
+            "POST", "/v1/messages", json=payload,
+            headers={"Idempotency-Key": idempotency_key or str(uuid.uuid4())},
+        )
 
     def send_bulk(
         self,
         messages: List[Dict[str, Any]],
         from_sender: Optional[str] = None,
         channel: str = "sms",
+        idempotency_key: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Send up to 10 000 messages. Returns {"batch_id", "total", "channel", "estimated_cost", "messages": [...], "rejected"?: [...]}."""
         payload: Dict[str, Any] = {"messages": messages, "channel": channel}
         if from_sender:
             payload["from"] = from_sender
-        return self._request("POST", "/v1/messages/bulk", json=payload)
+        return self._request(
+            "POST", "/v1/messages/bulk", json=payload,
+            headers={"Idempotency-Key": idempotency_key or str(uuid.uuid4())},
+        )
 
     def get_message(self, message_id: str) -> Dict[str, Any]:
         return self._request("GET", f"/v1/messages/{message_id}")
 
     def list_messages(self, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+        """Returns {"data": [...], "total", "limit", "offset"} — the rows are under "data"."""
         return self._request("GET", f"/v1/messages?limit={limit}&offset={offset}")
 
     def send_otp(
